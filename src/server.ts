@@ -29,7 +29,7 @@ await TestesProeficiencia.sync()
 await TestesProeficienciaQuestoes.sync()
 /*Sequelize não suporta a criação de tabelas com chaves estrangeiras compostas,
 então a criação da tabela alternativas_questoes é feita com uma query.*/
-conexaoDataBase.getConnection()
+await conexaoDataBase.getConnection()
 .then(async (connection: any) => {
     try{
         await connection.query(

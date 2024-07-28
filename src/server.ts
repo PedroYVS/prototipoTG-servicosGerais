@@ -27,8 +27,9 @@ const PORT = process.env.PORT || 6004
 await SoftSkills.sync()
 await TestesProeficiencia.sync()
 await TestesProeficienciaQuestoes.sync()
-// Sequelize não suporta a criação de tabelas com chaves estrangeiras compostas, então a criação da tabela alternativas_questoes é feita com uma query.
-await conexaoDataBase.getConnection()
+/*Sequelize não suporta a criação de tabelas com chaves estrangeiras compostas,
+então a criação da tabela alternativas_questoes é feita com uma query.*/
+conexaoDataBase.getConnection()
 .then(async (connection: any) => {
     try{
         await connection.query(
@@ -39,16 +40,17 @@ await conexaoDataBase.getConnection()
                 id_alternativa INT NOT NULL,\
                 texto_alternativa VARCHAR(250) NOT NULL,\
                 \
-                CONSTRAINT fk_alternativas_questoes FOREIGN KEY (id_teste_proeficiencia, id_questao) REFERENCES testes_proeficiencia_questoes (id_teste_proeficiencia, id_questao) ON DELETE CASCADE,\
+                CONSTRAINT fk_alternativas_questoes FOREIGN KEY (id_teste_proeficiencia, id_questao) \
+                REFERENCES testes_proeficiencia_questoes (id_teste_proeficiencia, id_questao) ON DELETE CASCADE,\
                 CONSTRAINT pk_alternativas_questoes PRIMARY KEY (id_teste_proeficiencia, id_questao, id_alternativa)\
             ) ENGINE=InnoDB;'
         )
+        console.log('Tabela alternativas_questoes criada com sucesso')
     }
     catch(err){
         console.error('Erro na criação da tabela alternativas_questoes', err)
     }
     connection.release()
-    console.log('Tabela alternativas_questoes criada com sucesso')
 })
 .catch((err: any) => {
     console.error('Erro na conexão com o banco de dados', err)
@@ -147,7 +149,13 @@ appServer.delete('/deletar-softskill', verificaToken, async (req, res) => {
 })
 
 appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res) => {
-    const { nome_teste_proeficiencia, descricao_teste_proeficiencia, email_admin, questoes, alternativas } = req.body
+    const { 
+        nome_teste_proeficiencia, 
+        descricao_teste_proeficiencia, 
+        email_admin, 
+        questoes, 
+        alternativas 
+    } = req.body
 
     let idTP: number, con: any
     try{
@@ -161,26 +169,50 @@ appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res)
     con.beginTransaction()
     .then(() => {
         return con.query(
-            `INSERT INTO testes_proeficiencia (nome_teste_proeficiencia, descricao_teste_proeficiencia, email_admin)
-            VALUES ('${nome_teste_proeficiencia}', '${descricao_teste_proeficiencia}', '${email_admin}')`
+            `INSERT INTO testes_proeficiencia (nome_teste_proeficiencia, 
+            descricao_teste_proeficiencia, email_admin) VALUES 
+            ('${nome_teste_proeficiencia}', '${descricao_teste_proeficiencia}', 
+            '${email_admin}')`
         )
     })
     .then((result: any) => {
         idTP = result[0].insertId
         const quests = []
         for(let i = 0; i < questoes.length; i++){
-            const q = [idTP, questoes[i].id_questao, questoes[i].enunciado_questao, questoes[i].valor_questao, questoes[i].alternativa_correta, questoes[i].id_soft_skill]
+            const q = [
+                idTP,
+                questoes[i].id_questao,
+                questoes[i].enunciado_questao,
+                questoes[i].valor_questao,
+                questoes[i].alternativa_correta,
+                questoes[i].id_soft_skill
+            ]
             quests.push(q)
         }
-        return con.query('INSERT INTO testes_proeficiencia_questoes (id_teste_proeficiencia, id_questao, enunciado_questao, valor_questao, alternativa_correta, id_soft_skill) VALUES ?', [quests])
+        return con.query(
+            'INSERT INTO testes_proeficiencia_questoes \
+            (id_teste_proeficiencia, id_questao, enunciado_questao, \
+            valor_questao, alternativa_correta, id_soft_skill) \
+            VALUES ?',
+            [quests]
+        )
     })
     .then(() => {
         const alts = []
         for(let i = 0; i < alternativas.length; i++){
-            const a = [idTP, alternativas[i].id_questao, alternativas[i].id_alternativa, alternativas[i].texto_alternativa]
+            const a = [
+                idTP,
+                alternativas[i].id_questao,
+                alternativas[i].id_alternativa,
+                alternativas[i].texto_alternativa
+            ]
             alts.push(a)
         }
-        return con.query('INSERT INTO alternativas_questoes (id_teste_proeficiencia, id_questao, id_alternativa, texto_alternativa) VALUES ?', [alts])
+        return con.query(
+            'INSERT INTO alternativas_questoes (id_teste_proeficiencia, \
+            id_questao, id_alternativa, texto_alternativa) VALUES ?',
+            [alts]
+        )
     })
     .then(() => {
         con.commit().then(() => {
@@ -208,7 +240,9 @@ appServer.get('/listar-testes-proeficiencia', verificaToken, async (_req, res) =
     let con: any
     try{
         con = await conexaoDataBase.getConnection()
-        const dadosTestes = await con.query('SELECT * FROM testes_proeficiencia ORDER BY id_teste_proeficiencia')
+        const dadosTestes = await con.query(
+            'SELECT * FROM testes_proeficiencia ORDER BY id_teste_proeficiencia'
+        )
         if(dadosTestes[0].length === 0){
             res.status(404).send(new NenhumTesteProeficienciaEncontrado())
             con.release()
@@ -248,7 +282,14 @@ appServer.delete('/deletar-teste-proeficiencia', verificaToken, async (req, res)
 })
 
 appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => {
-    const { id_teste_proeficiencia, nome_teste_proeficiencia, descricao_teste_proeficiencia, email_admin, questoes, alternativas } = req.body
+    const { 
+        id_teste_proeficiencia,
+        nome_teste_proeficiencia,
+        descricao_teste_proeficiencia,
+        email_admin,
+        questoes,
+        alternativas
+    } = req.body
 
     let con: any
     try{
@@ -263,28 +304,55 @@ appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => 
     con.beginTransaction()
     .then(() => {
         return con.query(
-            `UPDATE testes_proeficiencia SET nome_teste_proeficiencia = '${nome_teste_proeficiencia}', descricao_teste_proeficiencia = '${descricao_teste_proeficiencia}', email_admin = '${email_admin}'
+            `UPDATE testes_proeficiencia SET nome_teste_proeficiencia = 
+            '${nome_teste_proeficiencia}', descricao_teste_proeficiencia = 
+            '${descricao_teste_proeficiencia}', email_admin = '${email_admin}'
             WHERE id_teste_proeficiencia = ${id_teste_proeficiencia}`
         )
     })
     .then(() => {
-        return con.query(`DELETE FROM testes_proeficiencia_questoes WHERE id_teste_proeficiencia = ${id_teste_proeficiencia}`)
+        return con.query(
+            `DELETE FROM testes_proeficiencia_questoes 
+            WHERE id_teste_proeficiencia = ${id_teste_proeficiencia}`
+        )
     })
     .then(() => {
         const quests = []
         for(let i = 0; i < questoes.length; i++){
-            const q = [id_teste_proeficiencia, questoes[i].id_questao, questoes[i].enunciado_questao, questoes[i].valor_questao, questoes[i].alternativa_correta, questoes[i].id_soft_skill]
+            const q = [
+                id_teste_proeficiencia,
+                questoes[i].id_questao,
+                questoes[i].enunciado_questao,
+                questoes[i].valor_questao,
+                questoes[i].alternativa_correta,
+                questoes[i].id_soft_skill
+            ]
             quests.push(q)
         }
-        return con.query('INSERT INTO testes_proeficiencia_questoes (id_teste_proeficiencia, id_questao, enunciado_questao, valor_questao, alternativa_correta, id_soft_skill) VALUES ?', [quests])
+        return con.query(
+            'INSERT INTO testes_proeficiencia_questoes \
+            (id_teste_proeficiencia, id_questao, enunciado_questao, \
+            valor_questao, alternativa_correta, id_soft_skill) VALUES ?',
+            [quests]
+        )
     })
     .then(() => {
         const alts = []
         for(let i = 0; i < alternativas.length; i++){
-            const a = [id_teste_proeficiencia, alternativas[i].id_questao, alternativas[i].id_alternativa, alternativas[i].texto_alternativa]
+            const a = [
+                id_teste_proeficiencia,
+                alternativas[i].id_questao,
+                alternativas[i].id_alternativa,
+                alternativas[i].texto_alternativa
+            ]
             alts.push(a)
         }
-        return con.query('INSERT INTO alternativas_questoes (id_teste_proeficiencia, id_questao, id_alternativa, texto_alternativa) VALUES ?', [alts])
+        return con.query(
+            'INSERT INTO alternativas_questoes \
+            (id_teste_proeficiencia, id_questao, \
+            id_alternativa, texto_alternativa) VALUES ?',
+            [alts]
+        )
     })
     .then(() => {
         con.commit().then(() => {

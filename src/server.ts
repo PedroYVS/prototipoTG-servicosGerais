@@ -2,7 +2,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
-import { SoftSkills, TestesProeficiencia, TestesProeficienciaQuestoes, conexaoDataBase } from './ServicosGerais.DAOclasses.js'
+import { SoftSkills, TestesProficiencia, TestesProficienciaQuestoes, conexaoDataBase } from './ServicosGerais.DAOclasses.js'
 import {
     TokenNaoFornecido,
     TokenExpirado,
@@ -11,9 +11,9 @@ import {
     ViolacaoUniqueTP,
     ServicoIndisponivel,
     NenhumaSoftSkillEncontrada,
-    NenhumTesteProeficienciaEncontrado,
-    FalhaRegistroTesteProeficiencia,
-    FalhaEdicaoTesteProeficiencia
+    NenhumTesteProficienciaEncontrado,
+    FalhaRegistroTesteProficiencia,
+    FalhaEdicaoTesteProficiencia
 } from './ErrorList.js'
 
 const appServer = express()
@@ -25,8 +25,8 @@ const { JWT_UC_ACCESS_KEY, JWT_UA_ACCESS_KEY, JWT_UE_ACCESS_KEY } = process.env
 const PORT = process.env.PORT || 6004
 
 await SoftSkills.sync()
-await TestesProeficiencia.sync()
-await TestesProeficienciaQuestoes.sync()
+await TestesProficiencia.sync()
+await TestesProficienciaQuestoes.sync()
 /*Sequelize não suporta a criação de tabelas com chaves estrangeiras compostas,
 então a criação da tabela alternativas_questoes é feita com uma query.*/
 await conexaoDataBase.getConnection()
@@ -35,14 +35,14 @@ await conexaoDataBase.getConnection()
         await connection.query(
             'CREATE TABLE IF NOT EXISTS alternativas_questoes\
             (\
-                id_teste_proeficiencia INT NOT NULL,\
+                id_teste_proficiencia INT NOT NULL,\
                 id_questao INT NOT NULL,\
                 id_alternativa INT NOT NULL,\
                 texto_alternativa VARCHAR(250) NOT NULL,\
                 \
-                CONSTRAINT fk_alternativas_questoes FOREIGN KEY (id_teste_proeficiencia, id_questao) \
-                REFERENCES testes_proeficiencia_questoes (id_teste_proeficiencia, id_questao) ON DELETE CASCADE,\
-                CONSTRAINT pk_alternativas_questoes PRIMARY KEY (id_teste_proeficiencia, id_questao, id_alternativa)\
+                CONSTRAINT fk_alternativas_questoes FOREIGN KEY (id_teste_proficiencia, id_questao) \
+                REFERENCES testes_proficiencia_questoes (id_teste_proficiencia, id_questao) ON DELETE CASCADE,\
+                CONSTRAINT pk_alternativas_questoes PRIMARY KEY (id_teste_proficiencia, id_questao, id_alternativa)\
             ) ENGINE=InnoDB;'
         )
         console.log('Tabela alternativas_questoes criada com sucesso')
@@ -148,10 +148,10 @@ appServer.delete('/deletar-softskill', verificaToken, async (req, res) => {
     }
 })
 
-appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res) => {
+appServer.post('/registrar-teste-proficiencia', verificaToken, async (req, res) => {
     const { 
-        nome_teste_proeficiencia, 
-        descricao_teste_proeficiencia, 
+        nome_teste_proficiencia, 
+        descricao_teste_proficiencia, 
         email_admin, 
         questoes, 
         alternativas 
@@ -169,9 +169,9 @@ appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res)
     con.beginTransaction()
     .then(() => {
         return con.query(
-            `INSERT INTO testes_proeficiencia (nome_teste_proeficiencia, 
-            descricao_teste_proeficiencia, email_admin) VALUES 
-            ('${nome_teste_proeficiencia}', '${descricao_teste_proeficiencia}', 
+            `INSERT INTO testes_proficiencia (nome_teste_proficiencia, 
+            descricao_teste_proficiencia, email_admin) VALUES 
+            ('${nome_teste_proficiencia}', '${descricao_teste_proficiencia}', 
             '${email_admin}')`
         )
     })
@@ -190,8 +190,8 @@ appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res)
             quests.push(q)
         }
         return con.query(
-            'INSERT INTO testes_proeficiencia_questoes \
-            (id_teste_proeficiencia, id_questao, enunciado_questao, \
+            'INSERT INTO testes_proficiencia_questoes \
+            (id_teste_proficiencia, id_questao, enunciado_questao, \
             valor_questao, alternativa_correta, id_soft_skill) \
             VALUES ?',
             [quests]
@@ -209,25 +209,25 @@ appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res)
             alts.push(a)
         }
         return con.query(
-            'INSERT INTO alternativas_questoes (id_teste_proeficiencia, \
+            'INSERT INTO alternativas_questoes (id_teste_proficiencia, \
             id_questao, id_alternativa, texto_alternativa) VALUES ?',
             [alts]
         )
     })
     .then(() => {
         con.commit().then(() => {
-            res.status(201).send('Teste de Proeficiência Registrado com Sucesso')
+            res.status(201).send('Teste de Proficiência Registrado com Sucesso')
         })
     })
     .catch((reason: any) => {
         con.rollback().then(() => {
-            console.error('Erro ao registrar teste de proeficiência', reason)
+            console.error('Erro ao registrar teste de proficiência', reason)
             switch(reason.code){
                 case 'ER_DUP_ENTRY':
                     res.status(409).send(new ViolacaoUniqueTP())
                     break
                 default:
-                    res.status(503).send(new FalhaRegistroTesteProeficiencia())
+                    res.status(503).send(new FalhaRegistroTesteProficiencia())
             }
         })
     })
@@ -236,29 +236,29 @@ appServer.post('/registrar-teste-proeficiencia', verificaToken, async (req, res)
     })
 })
 
-appServer.get('/listar-testes-proeficiencia', verificaToken, async (_req, res) => {
+appServer.get('/listar-testes-proficiencia', verificaToken, async (_req, res) => {
     let con: any
     try{
         con = await conexaoDataBase.getConnection()
         const dadosTestes = await con.query(
-            'SELECT * FROM testes_proeficiencia ORDER BY id_teste_proeficiencia'
+            'SELECT * FROM testes_proficiencia ORDER BY id_teste_proficiencia'
         )
         if(dadosTestes[0].length === 0){
-            res.status(404).send(new NenhumTesteProeficienciaEncontrado())
+            res.status(404).send(new NenhumTesteProficienciaEncontrado())
             con.release()
             return
         }
         const dadosQuestoes = await con.query(
-            'SELECT tb1.*, tb2.nome_soft_skill FROM testes_proeficiencia_questoes \
-            tb1 INNER JOIN soft_skills tb2 ON tb1.id_soft_skill = tb2.id_soft_skill;'
+            'SELECT tb1.*, tb2.nome_soft_skill FROM testes_proficiencia_questoes \
+            tb1 LEFT OUTER JOIN soft_skills tb2 ON tb1.id_soft_skill = tb2.id_soft_skill;'
         )
         const dadosAlternativas = await con.query('SELECT * FROM alternativas_questoes')
-        const TestesProeficiencia = {
+        const TestesProficiencia = {
             testes: dadosTestes[0],
             questoes: dadosQuestoes[0],
             alternativas: dadosAlternativas[0]
         }
-        res.status(200).send(TestesProeficiencia)
+        res.status(200).send(TestesProficiencia)
     }
     catch(err: any){
         console.log('Erro ao estabelecer conexão ', err)
@@ -269,11 +269,11 @@ appServer.get('/listar-testes-proeficiencia', verificaToken, async (_req, res) =
     }
 })
 
-appServer.delete('/deletar-teste-proeficiencia', verificaToken, async (req, res) => {
-    const { id_teste_proeficiencia } = req.query
+appServer.delete('/deletar-teste-proficiencia', verificaToken, async (req, res) => {
+    const { id_teste_proficiencia } = req.query
     try{
-        await TestesProeficiencia.destroy({ where: { id_teste_proeficiencia } })
-        res.status(200).send('Teste de Proeficiência Deletado com Sucesso')
+        await TestesProficiencia.destroy({ where: { id_teste_proficiencia } })
+        res.status(200).send('Teste de Proficiência Deletado com Sucesso')
     }
     catch(err: any){
         console.log('Erro ao estabelecer conexão ', err)
@@ -281,11 +281,11 @@ appServer.delete('/deletar-teste-proeficiencia', verificaToken, async (req, res)
     }
 })
 
-appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => {
+appServer.put('/editar-teste-proficiencia', verificaToken, async (req, res) => {
     const { 
-        id_teste_proeficiencia,
-        nome_teste_proeficiencia,
-        descricao_teste_proeficiencia,
+        id_teste_proficiencia,
+        nome_teste_proficiencia,
+        descricao_teste_proficiencia,
         email_admin,
         questoes,
         alternativas
@@ -304,23 +304,23 @@ appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => 
     con.beginTransaction()
     .then(() => {
         return con.query(
-            `UPDATE testes_proeficiencia SET nome_teste_proeficiencia = 
-            '${nome_teste_proeficiencia}', descricao_teste_proeficiencia = 
-            '${descricao_teste_proeficiencia}', email_admin = '${email_admin}'
-            WHERE id_teste_proeficiencia = ${id_teste_proeficiencia}`
+            `UPDATE testes_proficiencia SET nome_teste_proficiencia = 
+            '${nome_teste_proficiencia}', descricao_teste_proficiencia = 
+            '${descricao_teste_proficiencia}', email_admin = '${email_admin}'
+            WHERE id_teste_proficiencia = ${id_teste_proficiencia}`
         )
     })
     .then(() => {
         return con.query(
-            `DELETE FROM testes_proeficiencia_questoes 
-            WHERE id_teste_proeficiencia = ${id_teste_proeficiencia}`
+            `DELETE FROM testes_proficiencia_questoes 
+            WHERE id_teste_proficiencia = ${id_teste_proficiencia}`
         )
     })
     .then(() => {
         const quests = []
         for(let i = 0; i < questoes.length; i++){
             const q = [
-                id_teste_proeficiencia,
+                id_teste_proficiencia,
                 questoes[i].id_questao,
                 questoes[i].enunciado_questao,
                 questoes[i].valor_questao,
@@ -330,8 +330,8 @@ appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => 
             quests.push(q)
         }
         return con.query(
-            'INSERT INTO testes_proeficiencia_questoes \
-            (id_teste_proeficiencia, id_questao, enunciado_questao, \
+            'INSERT INTO testes_proficiencia_questoes \
+            (id_teste_proficiencia, id_questao, enunciado_questao, \
             valor_questao, alternativa_correta, id_soft_skill) VALUES ?',
             [quests]
         )
@@ -340,7 +340,7 @@ appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => 
         const alts = []
         for(let i = 0; i < alternativas.length; i++){
             const a = [
-                id_teste_proeficiencia,
+                id_teste_proficiencia,
                 alternativas[i].id_questao,
                 alternativas[i].id_alternativa,
                 alternativas[i].texto_alternativa
@@ -349,25 +349,25 @@ appServer.put('/editar-teste-proeficiencia', verificaToken, async (req, res) => 
         }
         return con.query(
             'INSERT INTO alternativas_questoes \
-            (id_teste_proeficiencia, id_questao, \
+            (id_teste_proficiencia, id_questao, \
             id_alternativa, texto_alternativa) VALUES ?',
             [alts]
         )
     })
     .then(() => {
         con.commit().then(() => {
-            res.status(200).send('Teste de Proeficiência Editado com Sucesso')
+            res.status(200).send('Teste de Proficiência Editado com Sucesso')
         })
     })
     .catch((reason: any) => {
         con.rollback().then(() => {
-            console.error('Erro ao editar teste de proeficiência', reason)
+            console.error('Erro ao editar teste de proficiência', reason)
             switch(reason.code){
                 case 'ER_DUP_ENTRY':
                     res.status(409).send(new ViolacaoUniqueTP())
                     break
                 default:
-                    res.status(503).send(new FalhaEdicaoTesteProeficiencia())
+                    res.status(503).send(new FalhaEdicaoTesteProficiencia())
             }
         })
     })

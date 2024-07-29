@@ -56,22 +56,22 @@ SoftSkills.init(
     }
 )
 
-export class TestesProeficiencia extends Model {}
+export class TestesProficiencia extends Model {}
 
-TestesProeficiencia.init(
+TestesProficiencia.init(
     {
-        id_teste_proeficiencia: {
+        id_teste_proficiencia: {
             type: DataTypes.INTEGER,
             allowNull: false,
             primaryKey: true,
             autoIncrement: true,
         },
-        nome_teste_proeficiencia: {
+        nome_teste_proficiencia: {
             type: DataTypes.STRING(150),
             allowNull: false,
             unique: true
         },
-        descricao_teste_proeficiencia: {
+        descricao_teste_proficiencia: {
             type: DataTypes.STRING(500),
             allowNull: false
         },
@@ -82,23 +82,23 @@ TestesProeficiencia.init(
     },
     {
         sequelize,
-        modelName: 'TestesProeficiencia',
-        tableName: 'testes_proeficiencia',
+        modelName: 'TestesProficiencia',
+        tableName: 'testes_proficiencia',
         timestamps: false,
     }
 )
 
-export class TestesProeficienciaQuestoes extends Model {}
+export class TestesProficienciaQuestoes extends Model {}
 
-TestesProeficienciaQuestoes.init(
+TestesProficienciaQuestoes.init(
     {
-        id_teste_proeficiencia: {
+        id_teste_proficiencia: {
             type: DataTypes.INTEGER,
             allowNull: false,
             primaryKey: true,
             references: {
-                model: TestesProeficiencia,
-                key: 'id_teste_proeficiencia'
+                model: TestesProficiencia,
+                key: 'id_teste_proficiencia'
             },
             onDelete: 'CASCADE'
         },
@@ -131,8 +131,8 @@ TestesProeficienciaQuestoes.init(
     },
     {
         sequelize,
-        modelName: 'TestesProeficienciaQuestoes',
-        tableName: 'testes_proeficiencia_questoes',
+        modelName: 'TestesProficienciaQuestoes',
+        tableName: 'testes_proficiencia_questoes',
         timestamps: false
     }
 ) 
@@ -141,7 +141,7 @@ TestesProeficienciaQuestoes.init(
 
 // AlternativasQuestoes.init(
 //     {
-//         id_teste_proeficiencia: {
+//         id_teste_proficiencia: {
 //             type: DataTypes.INTEGER,
 //             allowNull: false,
 //             primaryKey: true,

@@ -16,7 +16,7 @@ export class ViolacaoUniqueTP extends Error {
     constructor(){
         super()
         this.name ='NomeJaCadastrado'
-        this.message = 'Nome de Teste de Proeficiência já registrado'
+        this.message = 'Nome de Teste de Proficiência já registrado'
     }
 }
 export class TokenNaoFornecido extends Error {
@@ -47,24 +47,24 @@ export class NenhumaSoftSkillEncontrada extends Error {
         this.message = 'Nenhuma Soft Skill encontrada'
     }
 }
-export class NenhumTesteProeficienciaEncontrado extends Error {
+export class NenhumTesteProficienciaEncontrado extends Error {
     constructor(){
         super()
-        this.name = 'NenhumTesteProeficienciaEncontrado'
-        this.message = 'Nenhum teste de proeficiência encontrado'
+        this.name = 'NenhumTesteProficienciaEncontrado'
+        this.message = 'Nenhum teste de proficiência encontrado'
     }
 }
-export class FalhaRegistroTesteProeficiencia extends Error {
+export class FalhaRegistroTesteProficiencia extends Error {
     constructor(){
         super()
-        this.name = 'FalhaRegistroTesteProeficiencia'
-        this.message = 'Falha ao registrar teste de proeficiência'
+        this.name = 'FalhaRegistroTesteProficiencia'
+        this.message = 'Falha ao registrar teste de proficiência'
     }
 }
-export class FalhaEdicaoTesteProeficiencia extends Error {
+export class FalhaEdicaoTesteProficiencia extends Error {
     constructor(){
         super()
-        this.name = 'FalhaEdicaoTesteProeficiencia'
-        this.message = 'Falha ao editar teste de proeficiência'
+        this.name = 'FalhaEdicaoTesteProficiencia'
+        this.message = 'Falha ao editar teste de proficiência'
     }
 }
